@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pomodoro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Outfit',sans-serif;background:#FDF6ED;min-height:100vh;display:flex;flex-direction:column}
+
+    /* ════════════════════════════
+       SAYFA SİSTEMİ
+    ════════════════════════════ */
+    .page{display:none;flex-direction:column;flex:1;min-height:0}
+    .page.active{display:flex}
+
+    /* ════════════════════════════
+       NAVBAR
+    ════════════════════════════ */
+    .navbar{position:fixed;bottom:0;left:0;right:0;background:#FDF6ED;border-top:1px solid #DCCFC0;display:flex;justify-content:center;gap:48px;padding:10px 0 14px;z-index:50}
+    .nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:#DCCFC0;font-family:'Outfit',sans-serif;font-size:10px;font-weight:500;transition:color .15s}
+    .nav-btn:hover,.nav-btn.active{color:#778873}
+    .nav-btn i{font-size:22px}
+
+    /* ════════════════════════════
+       POMODORO SAYFASI
+    ════════════════════════════ */
+    .pomo-main{display:flex;flex-direction:column;align-items:center;padding:2rem 1.5rem 5rem;width:100%;max-width:440px;margin:0 auto}
+    h1{font-size:20px;font-weight:500;color:#778873;margin-bottom:1.5rem;letter-spacing:1px}
+    .tabs{display:flex;gap:8px;margin-bottom:1.75rem;flex-wrap:wrap;justify-content:center}
+    .tab{padding:8px 20px;border-radius:20px;border:none;cursor:pointer;font-size:14px;font-weight:500;font-family:'Outfit',sans-serif;transition:all .2s}
+    .tab.active{background:#778873;color:#FDF6ED}
+    .tab:not(.active){background:#DCCFC0;color:#778873}
+    .tab:not(.active):hover{background:#A1BC98;color:#FDF6ED}
+    .clock-wrap{width:200px;height:200px;position:relative;margin-bottom:1.5rem}
+    .clock-wrap svg{transform:rotate(-90deg)}
+    .ring-bg{fill:none;stroke:#DCCFC0;stroke-width:10}
+    .ring-fg{fill:none;stroke:#778873;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+    .time-display{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:44px;font-weight:500;color:#778873;letter-spacing:2px}
+    .controls{display:flex;gap:12px;margin-bottom:1.25rem}
+    .btn{width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:all .15s}
+    .btn-play{background:#778873;color:#FDF6ED}
+    .btn-play:hover{background:#A1BC98}
+    .btn-reset{background:#DCCFC0;color:#778873}
+    .btn-reset:hover{background:#A1BC98;color:#FDF6ED}
+    .session-count{font-size:13px;color:#A1BC98;margin-bottom:1.25rem}
+    .active-task-bar{width:100%;background:#eef3ec;border:1.5px solid #778873;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer}
+    .active-task-bar:hover{background:#e3ede0}
+    .atb-left{display:flex;flex-direction:column;gap:2px}
+    .atb-label{font-size:11px;color:#A1BC98}
+    .atb-name{font-size:14px;font-weight:500;color:#778873}
+    .atb-pomo{font-size:12px;color:#A1BC98}
+    .atb-none{font-size:13px;color:#DCCFC0;padding:10px 14px;width:100%;text-align:center;border:1.5px dashed #DCCFC0;border-radius:10px;cursor:pointer}
+    .atb-none:hover{border-color:#A1BC98;color:#A1BC98}
+
+    /* ════════════════════════════
+       ANA MENÜ SAYFASI
+    ════════════════════════════ */
+    .home-layout{display:flex;flex:1;min-height:0;padding-bottom:58px}
+
+    /* Sidebar */
+    .sidebar{width:200px;min-width:200px;background:#778873;display:flex;flex-direction:column;padding:1.5rem 0;overflow-y:auto}
+    .sidebar-title{font-size:11px;font-weight:600;color:#DCCFC0;letter-spacing:1.5px;text-transform:uppercase;padding:0 1.25rem;margin-bottom:1rem}
+    .cat-item{display:flex;align-items:center;justify-content:space-between;padding:10px 1.25rem;cursor:pointer;transition:background .15s;gap:6px}
+    .cat-item:hover{background:rgba(255,255,255,.1)}
+    .cat-item.active{background:rgba(255,255,255,.18)}
+    .cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .cat-name{font-size:14px;color:#FDF6ED;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cat-count{font-size:12px;color:#A1BC98;background:rgba(0,0,0,.15);border-radius:10px;padding:1px 7px;white-space:nowrap}
+    .cat-del-btn{background:none;border:none;cursor:pointer;color:rgba(253,246,237,.3);font-size:12px;padding:0;transition:color .15s;flex-shrink:0}
+    .cat-del-btn:hover{color:#FDF6ED}
+    .sidebar-divider{height:1px;background:rgba(255,255,255,.1);margin:8px 1.25rem}
+    .add-cat-btn{display:flex;align-items:center;gap:8px;padding:10px 1.25rem;cursor:pointer;color:#DCCFC0;font-size:13px;background:none;border:none;font-family:'Outfit',sans-serif;transition:color .15s;width:100%}
+    .add-cat-btn:hover{color:#FDF6ED}
+
+    /* Ana içerik */
+    .home-content{flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto}
+    .home-header{padding:1.5rem 1.5rem 1rem;border-bottom:1px solid #DCCFC0}
+    .home-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+    .home-cat-title{font-size:22px;font-weight:600;color:#778873}
+    .home-progress{font-size:13px;color:#A1BC98}
+    .pomo-quick-btn{padding:8px 16px;border-radius:20px;border:none;background:#778873;color:#FDF6ED;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+    .pomo-quick-btn:hover{background:#A1BC98}
+
+    .home-toolbar{padding:1rem 1.5rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .home-add-input{flex:1;min-width:150px;padding:9px 12px;border:1.5px solid #DCCFC0;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:#778873;background:#fff;outline:none}
+    .home-add-input:focus{border-color:#A1BC98}
+    .home-add-btn{padding:9px 18px;border-radius:8px;border:none;background:#778873;color:#FDF6ED;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+    .home-add-btn:hover{background:#A1BC98}
+
+    .home-filters{display:flex;gap:6px;padding:0 1.5rem 1rem}
+    .hf-btn{padding:5px 14px;border-radius:14px;border:none;font-size:12px;font-weight:500;font-family:'Outfit',sans-serif;cursor:pointer;transition:all .15s}
+    .hf-btn.active{background:#778873;color:#FDF6ED}
+    .hf-btn:not(.active){background:#DCCFC0;color:#778873}
+    .hf-btn:not(.active):hover{background:#A1BC98;color:#FDF6ED}
+
+    .home-task-list{flex:1;padding:0 1.5rem 1rem;display:flex;flex-direction:column;gap:8px}
+    .home-task-item{background:#fff;border:1px solid #DCCFC0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;transition:border-color .15s}
+    .home-task-item:hover{border-color:#A1BC98}
+    .home-task-item.ht-active{border-color:#778873;background:#eef3ec}
+    .home-task-item.ht-done{opacity:.55}
+    .ht-check{width:20px;height:20px;border-radius:6px;border:1.5px solid #DCCFC0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;background:#fff}
+    .ht-check:hover{border-color:#A1BC98}
+    .ht-check.checked{background:#778873;border-color:#778873}
+    .ht-check.checked i{color:#FDF6ED;font-size:12px}
+    .ht-body{flex:1;min-width:0}
+    .ht-name{font-size:14px;font-weight:500;color:#778873;cursor:pointer}
+    .ht-name:hover{color:#A1BC98}
+    .ht-name.ht-done-name{text-decoration:line-through;color:#A1BC98}
+    .ht-desc{font-size:12px;color:#A1BC98;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ht-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .ht-pomo{font-size:12px;color:#A1BC98}
+    .ht-dots{display:flex;gap:3px}
+    .dot{width:7px;height:7px;border-radius:50%;background:#778873}
+    .dot.empty{background:#DCCFC0}
+    .ht-del{background:none;border:none;cursor:pointer;color:#DCCFC0;font-size:15px;padding:0}
+    .ht-del:hover{color:#778873}
+    .home-empty{font-size:14px;color:#DCCFC0;text-align:center;padding:3rem 0}
+
+    /* Açıklama satırı */
+    .ht-desc-row{display:none;padding:8px 0 0}
+    .ht-desc-row.open{display:block}
+    .ht-desc-ta{width:100%;padding:6px 8px;border:1px solid #DCCFC0;border-radius:6px;font-family:'Outfit',sans-serif;font-size:12px;color:#778873;background:transparent;outline:none;resize:none}
+    .ht-desc-ta:focus{border-color:#A1BC98}
+    .ht-desc-ta::placeholder{color:#DCCFC0}
+
+    /* ════════════════════════════
+       SLIDE-UP PANELLER
+    ════════════════════════════ */
+    .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.15);opacity:0;pointer-events:none;transition:opacity .25s;z-index:10}
+    .panel-overlay.open{opacity:1;pointer-events:all}
+    .panel{position:fixed;bottom:0;left:0;right:0;background:#FDF6ED;border-radius:20px 20px 0 0;padding:1.5rem 1.5rem 5rem;max-height:85vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:11;max-width:480px;margin:0 auto}
+    .panel.open{transform:translateY(0)}
+    .panel-handle{width:36px;height:4px;background:#DCCFC0;border-radius:2px;margin:0 auto 1.25rem}
+    .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+    .panel-title{font-size:16px;font-weight:600;color:#778873}
+    .panel-close{background:none;border:none;cursor:pointer;color:#DCCFC0;font-size:20px;padding:4px}
+    .panel-close:hover{color:#778873}
+    .setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #DCCFC0}
+    .setting-row:last-child{border-bottom:none}
+    .setting-info{display:flex;flex-direction:column;gap:2px}
+    .setting-label{font-size:14px;color:#778873}
+    .setting-sub{font-size:11px;color:#A1BC98}
+    .setting-controls{display:flex;align-items:center;gap:10px}
+    .cnt-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid #A1BC98;background:transparent;color:#778873;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+    .cnt-btn:hover{background:#A1BC98;color:#FDF6ED}
+    .cnt-val{font-size:16px;font-weight:500;color:#778873;min-width:32px;text-align:center}
+
+    /* Kategori ekleme modalı */
+    .cat-add-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:100;align-items:center;justify-content:center}
+    .cat-add-modal.open{display:flex}
+    .cat-modal-box{background:#FDF6ED;border-radius:16px;padding:1.5rem;width:90%;max-width:320px;display:flex;flex-direction:column;gap:12px}
+    .cat-modal-title{font-size:16px;font-weight:600;color:#778873}
+    .cat-modal-input{padding:9px 12px;border:1.5px solid #DCCFC0;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:#778873;outline:none;background:#fff}
+    .cat-modal-input:focus{border-color:#A1BC98}
+    .color-row{display:flex;gap:8px;flex-wrap:wrap}
+    .color-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s}
+    .color-swatch.selected{border-color:#778873}
+    .cat-modal-btns{display:flex;gap:8px;justify-content:flex-end}
+    .cat-modal-cancel{padding:8px 16px;border-radius:8px;border:1.5px solid #DCCFC0;background:transparent;color:#778873;font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer}
+    .cat-modal-ok{padding:8px 16px;border-radius:8px;border:none;background:#778873;color:#FDF6ED;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+    .cat-modal-ok:hover{background:#A1BC98}
+
+    @media(max-width:500px){
+      .sidebar{width:140px;min-width:140px}
+      .cat-name{font-size:13px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ POMODORO SAYFASI ══ -->
+<div class="page active" id="pagePomo">
+  <div class="pomo-main">
+    <h1>🍅 Pomodoro</h1>
+    <div class="tabs">
+      <button class="tab active" onclick="setMode('work')">Çalışma</button>
+      <button class="tab" onclick="setMode('short')">Kısa Mola</button>
+      <button class="tab" onclick="setMode('long')">Uzun Mola</button>
+    </div>
+    <div class="clock-wrap">
+      <svg viewBox="0 0 200 200" width="200" height="200">
+        <circle class="ring-bg" cx="100" cy="100" r="88"/>
+        <circle class="ring-fg" id="ring" cx="100" cy="100" r="88"/>
+      </svg>
+      <div class="time-display" id="timeDisplay">25:00</div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-reset" onclick="resetTimer()"><i class="ti ti-refresh"></i></button>
+      <button class="btn btn-play" onclick="toggleTimer()"><i class="ti ti-player-play" id="playIcon"></i></button>
+    </div>
+    <div class="session-count" id="sessionCount">Tamamlanan: 0 pomodoro</div>
+    <div id="activeTaskBar" style="width:100%" onclick="showPage('pageHome')">
+      <div class="atb-none">+ Görev seç veya ekle</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ANA MENÜ SAYFASI ══ -->
+<div class="page" id="pageHome">
+  <div class="home-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title">Kategoriler</div>
+      <div id="catList"></div>
+      <div class="sidebar-divider"></div>
+      <button class="add-cat-btn" onclick="openCatModal()">
+        <i class="ti ti-plus"></i> Kategori Ekle
+      </button>
+    </aside>
+
+    <!-- İçerik -->
+    <div class="home-content">
+      <div class="home-header">
+        <div class="home-header-top">
+          <div>
+            <div class="home-cat-title" id="homeCatTitle">Tüm Görevler</div>
+            <div class="home-progress" id="homeProgress">0/0 tamamlandı</div>
+          </div>
+          <button class="pomo-quick-btn" onclick="showPage('pagePomo')">
+            🍅 Pomodoro
+          </button>
+        </div>
+      </div>
+      <div class="home-toolbar">
+        <input class="home-add-input" id="homeTaskInput" type="text" placeholder="Yeni görev ekle..."/>
+        <button class="home-add-btn" onclick="addHomeTask()">Ekle</button>
+      </div>
+      <div class="home-filters">
+        <button class="hf-btn active" onclick="setHomeFilter('all',this)">Tümü</button>
+        <button class="hf-btn" onclick="setHomeFilter('active',this)">Aktif</button>
+        <button class="hf-btn" onclick="setHomeFilter('done',this)">Tamamlanan</button>
+      </div>
+      <div class="home-task-list" id="homeTaskList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="navbar">
+  <button class="nav-btn active" onclick="showPage('pageHome')" id="navHome">
+    <i class="ti ti-layout-sidebar"></i>
+    Ana Menü
+  </button>
+  <button class="nav-btn" onclick="showPage('pagePomo')" id="navPomo">
+    <i class="ti ti-clock-play"></i>
+    Pomodoro
+  </button>
+  <button class="nav-btn" onclick="openPanel('settings')" id="navSettings">
+    <i class="ti ti-clock-edit"></i>
+    Süre
+  </button>
+</nav>
+
+<!-- OVERLAY -->
+<div class="panel-overlay" id="overlay" onclick="closePanel()"></div>
+
+<!-- SAAT PANELİ -->
+<div class="panel" id="settingsPanel">
+  <div class="panel-handle"></div>
+  <div class="panel-header">
+    <span class="panel-title">Süre Ayarları</span>
+    <button class="panel-close" onclick="closePanel()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="setting-row">
+    <div class="setting-info"><span class="setting-label">Çalışma</span><span class="setting-sub">Odaklanma süresi</span></div>
+    <div class="setting-controls">
+      <button class="cnt-btn" onclick="changeVal('work',-1)">−</button>
+      <span class="cnt-val" id="work-val">25</span>
+      <button class="cnt-btn" onclick="changeVal('work',1)">+</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div class="setting-info"><span class="setting-label">Kısa Mola</span><span class="setting-sub">Kısa dinlenme</span></div>
+    <div class="setting-controls">
+      <button class="cnt-btn" onclick="changeVal('short',-1)">−</button>
+      <span class="cnt-val" id="short-val">5</span>
+      <button class="cnt-btn" onclick="changeVal('short',1)">+</button>
+    </div>
+  </div>
+  <div class="setting-row">
+    <div class="setting-info"><span class="setting-label">Uzun Mola</span><span class="setting-sub">4 pomodoro sonrası</span></div>
+    <div class="setting-controls">
+      <button class="cnt-btn" onclick="changeVal('long',-1)">−</button>
+      <span class="cnt-val" id="long-val">15</span>
+      <button class="cnt-btn" onclick="changeVal('long',1)">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- KATEGORİ EKLEME MODALİ -->
+<div class="cat-add-modal" id="catModal">
+  <div class="cat-modal-box">
+    <div class="cat-modal-title">Yeni Kategori</div>
+    <input class="cat-modal-input" id="catNameInput" type="text" placeholder="Kategori adı..." onkeydown="if(event.key==='Enter') confirmAddCat()"/>
+    <div class="color-row" id="colorRow"></div>
+    <div class="cat-modal-btns">
+      <button class="cat-modal-cancel" onclick="closeCatModal()">İptal</button>
+      <button class="cat-modal-ok" onclick="confirmAddCat()">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════ TIMER ════════════════ */
+const durations={work:25,short:5,long:15};
+const mins={work:1,short:1,long:1},maxs={work:60,short:30,long:60};
+let mode='work',running=false,timerInterval=null;
+let remaining=25*60,total=25*60,totalSessions=0;
+const CIRC=2*Math.PI*88;
+const ring=document.getElementById('ring');
+ring.style.strokeDasharray=CIRC; ring.style.strokeDashoffset=0;
+
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function updateDisplay(){
+  document.getElementById('timeDisplay').textContent=fmt(remaining);
+  ring.style.strokeDashoffset=CIRC*(remaining/total);
+}
+function setMode(m){
+  if(running)stopTimer();
+  mode=m;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['work','short','long'][i]===m));
+  remaining=durations[m]*60;total=remaining;updateDisplay();
+}
+function toggleTimer(){running?stopTimer():startTimer();}
+function sendNotif(title,body){if(Notification&&Notification.permission==='granted')new Notification(title,{body});}
+function playAlarm(){
+  try{const c=new AudioContext(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);
+  o.frequency.setValueAtTime(880,c.currentTime);
+  o.frequency.setValueAtTime(660,c.currentTime+.2);
+  o.frequency.setValueAtTime(880,c.currentTime+.4);
+  g.gain.setValueAtTime(.3,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.8);
+  o.start(c.currentTime);o.stop(c.currentTime+.8);}catch(e){}
+}
+function startTimer(){
+  if(Notification&&Notification.permission==='default')Notification.requestPermission();
+  running=true;
+  document.getElementById('playIcon').className='ti ti-player-pause';
+  timerInterval=setInterval(()=>{
+    if(remaining<=0)return;
+    remaining--;updateDisplay();
+    if(remaining<=0){
+      stopTimer();playAlarm();
+      if(mode==='work'){
+        totalSessions++;
+        document.getElementById('sessionCount').textContent='Tamamlanan: '+totalSessions+' pomodoro';
+        if(activeTaskId!==null){
+          const t=tasks.find(t=>t.id===activeTaskId);
+          if(t){t.pomodoros++;renderTaskBar();renderHomeTaskList();}
+        }
+        sendNotif('🍅 Pomodoro bitti!','Süre doldu. Mola zamanı!');
+      }else{
+        sendNotif('☕ Mola bitti!','Çalışmaya devam etme zamanı.');
+      }
+    }
+  },1000);
+}
+function stopTimer(){
+  running=false;clearInterval(timerInterval);
+  document.getElementById('playIcon').className='ti ti-player-play';
+}
+function resetTimer(){stopTimer();remaining=durations[mode]*60;total=remaining;updateDisplay();}
+function changeVal(key,delta){
+  const v=Math.min(maxs[key],Math.max(mins[key],durations[key]+delta));
+  durations[key]=v;
+  document.getElementById(key+'-val').textContent=v;
+  if(key===mode){stopTimer();remaining=v*60;total=remaining;updateDisplay();}
+}
+
+/* ════════════════ VERİ ════════════════ */
+const CAT_COLORS=['#778873','#A1BC98','#DCCFC0','#c4a882','#8aa6b5','#b5908a','#9a8ab5','#b5b08a'];
+let categories=[{id:0,name:'Java',color:'#778873'},{id:1,name:'Dil',color:'#A1BC98'}];
+let tasks=[];
+let activeTaskId=null,nextTaskId=0,nextCatId=2;
+let activeCatId='all',homeFilter='all',openDescIds={};
+let selectedColor=CAT_COLORS[0];
+
+/* ════════════════ SAYFA ════════════════ */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const map={pageHome:'navHome',pagePomo:'navPomo'};
+  if(map[id])document.getElementById(map[id]).classList.add('active');
+  if(id==='pageHome'){renderSidebar();renderHomeTaskList();}
+}
+
+/* ════════════════ KATEGORİ ════════════════ */
+function renderSidebar(){
+  const list=document.getElementById('catList');
+  list.innerHTML='';
+  // Tüm görevler
+  const allItem=document.createElement('div');
+  allItem.className='cat-item'+(activeCatId==='all'?' active':'');
+  const allCount=tasks.length;
+  allItem.innerHTML=`<div class="cat-dot" style="background:#DCCFC0"></div><span class="cat-name">Tüm Görevler</span><span class="cat-count">${allCount}</span>`;
+  allItem.onclick=()=>{activeCatId='all';renderSidebar();renderHomeTaskList();};
+  list.appendChild(allItem);
+  // Kategoriler
+  categories.forEach(cat=>{
+    const count=tasks.filter(t=>t.catId===cat.id).length;
+    const item=document.createElement('div');
+    item.className='cat-item'+(activeCatId===cat.id?' active':'');
+    item.innerHTML=`<div class="cat-dot" style="background:${cat.color}"></div><span class="cat-name">${cat.name}</span><span class="cat-count">${count}</span><button class="cat-del-btn" onclick="event.stopPropagation();deleteCat(${cat.id})"><i class="ti ti-x"></i></button>`;
+    item.onclick=()=>{activeCatId=cat.id;renderSidebar();renderHomeTaskList();};
+    list.appendChild(item);
+  });
+}
+function deleteCat(id){
+  categories=categories.filter(c=>c.id!==id);
+  tasks=tasks.filter(t=>t.catId!==id);
+  if(activeCatId===id)activeCatId='all';
+  renderSidebar();renderHomeTaskList();renderTaskBar();
+}
+function openCatModal(){
+  document.getElementById('catNameInput').value='';
+  selectedColor=CAT_COLORS[0];
+  renderColorRow();
+  document.getElementById('catModal').classList.add('open');
+  setTimeout(()=>document.getElementById('catNameInput').focus(),100);
+}
+function closeCatModal(){document.getElementById('catModal').classList.remove('open');}
+function renderColorRow(){
+  const row=document.getElementById('colorRow');
+  row.innerHTML='';
+  CAT_COLORS.forEach(c=>{
+    const sw=document.createElement('div');
+    sw.className='color-swatch'+(c===selectedColor?' selected':'');
+    sw.style.background=c;
+    sw.onclick=()=>{selectedColor=c;renderColorRow();};
+    row.appendChild(sw);
+  });
+}
+function confirmAddCat(){
+  const name=document.getElementById('catNameInput').value.trim();
+  if(!name)return;
+  categories.push({id:nextCatId++,name,color:selectedColor});
+  closeCatModal();
+  renderSidebar();
+}
+
+/* ════════════════ GÖREVLER (ANA MENÜ) ════════════════ */
+function addHomeTask(){
+  const inp=document.getElementById('homeTaskInput');
+  const name=inp.value.trim();if(!name)return;
+  const catId=activeCatId==='all'?(categories.length>0?categories[0].id:null):activeCatId;
+  tasks.push({id:nextTaskId++,name,catId,pomodoros:0,desc:'',done:false});
+  inp.value='';
+  renderSidebar();renderHomeTaskList();renderTaskBar();
+}
+document.getElementById('homeTaskInput').addEventListener('keydown',e=>{if(e.key==='Enter')addHomeTask();});
+
+function deleteHomeTask(id){
+  tasks=tasks.filter(t=>t.id!==id);
+  if(activeTaskId===id){activeTaskId=null;renderTaskBar();}
+  delete openDescIds[id];
+  renderSidebar();renderHomeTaskList();
+}
+function toggleHomeCheck(id){
+  const t=tasks.find(t=>t.id===id);if(!t)return;
+  t.done=!t.done;
+  if(t.done&&activeTaskId===id){activeTaskId=null;renderTaskBar();}
+  renderSidebar();renderHomeTaskList();
+}
+function selectHomeTask(id){
+  activeTaskId=activeTaskId===id?null:id;
+  renderTaskBar();renderHomeTaskList();
+}
+function toggleHomeDesc(id){openDescIds[id]=!openDescIds[id];renderHomeTaskList();}
+function updateHomeDesc(id,val){const t=tasks.find(t=>t.id===id);if(t)t.desc=val;}
+function setHomeFilter(f,btn){
+  homeFilter=f;
+  document.querySelectorAll('.hf-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHomeTaskList();
+}
+
+function renderHomeTaskList(){
+  // Başlık
+  let catLabel='Tüm Görevler';
+  if(activeCatId!=='all'){
+    const cat=categories.find(c=>c.id===activeCatId);
+    if(cat)catLabel=cat.name;
+  }
+  document.getElementById('homeCatTitle').textContent=catLabel;
+
+  let filtered=tasks;
+  if(activeCatId!=='all')filtered=tasks.filter(t=>t.catId===activeCatId);
+  const done=filtered.filter(t=>t.done).length;
+  document.getElementById('homeProgress').textContent=done+'/'+filtered.length+' tamamlandı';
+
+  if(homeFilter==='active')filtered=filtered.filter(t=>!t.done);
+  if(homeFilter==='done')filtered=filtered.filter(t=>t.done);
+
+  const list=document.getElementById('homeTaskList');
+  if(filtered.length===0){
+    list.innerHTML='<div class="home-empty">Görev yok</div>';return;
+  }
+  list.innerHTML='';
+  filtered.forEach(t=>{
+    const isActive=t.id===activeTaskId;
+    const isOpen=!!openDescIds[t.id];
+    const filled=Math.min(t.pomodoros,6);
+    const empty=Math.max(0,4-filled);
+    const item=document.createElement('div');
+    item.className='home-task-item'+(isActive?' ht-active':'')+(t.done?' ht-done':'');
+    item.innerHTML=`
+      <div class="ht-check${t.done?' checked':''}" onclick="toggleHomeCheck(${t.id})">
+        ${t.done?'<i class="ti ti-check"></i>':''}
+      </div>
+      <div class="ht-body">
+        <div class="ht-name${t.done?' ht-done-name':''}" onclick="selectHomeTask(${t.id})">${t.name}</div>
+        ${t.desc&&!isOpen?`<div class="ht-desc">${t.desc}</div>`:''}
+        <div class="ht-desc-row${isOpen?' open':''}">
+          <textarea class="ht-desc-ta" rows="2" placeholder="Açıklama ekle..." oninput="updateHomeDesc(${t.id},this.value)">${t.desc}</textarea>
+        </div>
+        <button style="font-size:11px;color:#A1BC98;background:none;border:none;cursor:pointer;padding:2px 0 0;font-family:'Outfit',sans-serif" onclick="toggleHomeDesc(${t.id})">${isOpen?'▲ Gizle':'▼ Açıklama'}</button>
+      </div>
+      <div class="ht-right">
+        <span class="ht-pomo">🍅${t.pomodoros}</span>
+        <div class="ht-dots">
+          ${Array(filled).fill('<div class="dot"></div>').join('')}
+          ${Array(empty).fill('<div class="dot empty"></div>').join('')}
+        </div>
+        <button class="ht-del" onclick="deleteHomeTask(${t.id})"><i class="ti ti-x"></i></button>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+
+/* ════════════════ POMODORO AKTİF GÖREV BAR ════════════════ */
+function renderTaskBar(){
+  const bar=document.getElementById('activeTaskBar');
+  if(activeTaskId===null){
+    bar.innerHTML='<div class="atb-none">+ Görev seç veya ekle</div>';return;
+  }
+  const t=tasks.find(t=>t.id===activeTaskId);
+  if(!t){activeTaskId=null;bar.innerHTML='<div class="atb-none">+ Görev seç veya ekle</div>';return;}
+  bar.innerHTML=`<div class="active-task-bar"><div class="atb-left"><span class="atb-label">Aktif görev</span><span class="atb-name">${t.name}</span></div><span class="atb-pomo">🍅 ${t.pomodoros}</span></div>`;
+}
+
+/* ════════════════ PANEL ════════════════ */
+function openPanel(name){
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(name+'Panel').classList.add('open');
+  document.getElementById('navSettings').classList.add('active');
+}
+function closePanel(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('navSettings').classList.remove('active');
+}
+
+/* ════════════════ BAŞLAT ════════════════ */
+updateDisplay();
+showPage('pageHome');
+renderColorRow();
+</script>
+</body>
+</html>
